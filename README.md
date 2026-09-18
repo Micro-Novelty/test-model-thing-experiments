@@ -1,4 +1,4 @@
-# Test-Model-Thing (TMT)
+# Test-Model-Thing (TMT) 
 
 [YouTube Video](https://youtu.be/9UERVVwpNew)
 
@@ -43,3 +43,93 @@ I think this probably will contribute to solving continual learning and memory b
 Below is an approximate flow chart of the model architecture, made in Apple's Freeform app (excluding the wrapper for dataset cleaning and input/output handling) for reference. Note that the arrow connecting the target latent to the CE loss should instead be the target byte to the CE loss.
 
 <img width="1653" height="1161" alt="JEPA thing" src="https://github.com/user-attachments/assets/2d3a34ff-ba6a-44b8-b361-6c73da9216c0" />
+
+
+# Experiments:
+- The experiment i included are Turning the entire TMT from only using MLX into a Pure numpy for a thorough gradient check on every layer, and Easier Modification.
+- I incorporate a New Weight encoding for the layers inside the Model forward pass in hope of achieving a relative max rel error:
+- ```python
+  if len(self.p) < 1:
+          dim = self.dim
+          rng = self.rng
+          emb_scale = 1.0 / math.sqrt(dim)      # mlx.nn.Embedding init
+          k = 1.0 / math.sqrt(dim)
+          dtype = self.dtype 
+          p = self.p
+          layers = self.layers
+
+          self.weight_encoding = WeightEncoding(dim, dim)
+          p["encoder.embed.weight"] = rng.normal(0.0, emb_scale, (256, dim)).astype(dtype)
+          x = p["encoder.embed.weight"][c]
+          cache = {"c": c, "x0": x, "prev": [], "state": [], "decay": [],
+               "xhat": [], "rstd": [], "norm": [], "h": [], "xin": []}
+          p["decoder.decode.weight"] = rng.uniform(-k, k, (256, dim)).astype(dtype)
+          p["decoder.decode.bias"] = rng.uniform(-k, k, (256,)).astype(dtype)
+          p["decoder.stop.weight"] = rng.uniform(-k, k, (1, dim)).astype(dtype)
+          p["decoder.stop.bias"] = rng.uniform(-k, k, (1,)).astype(dtype)
+
+          for i in range(layers):
+              p[f"layers.{i}.decay"] = np.zeros(dim, dtype)
+              p[f"layers.{i}.norm.weight"] = np.ones(dim, dtype)
+              p[f"layers.{i}.norm.bias"] = np.zeros(dim, dtype)
+              p[f"layers.{i}.weights.weight"] = self.weight_encoding.weight_shaping(x) # placed Right here.
+
+          self.p = p
+    ```
+- The Gradient check results (without Weight encoding):
+- ```txt
+  ok   encoder.embed.weight     max rel err 7.608e-10
+  ok   decoder.decode.weight    max rel err 1.730e-07
+  ok   decoder.decode.bias      max rel err 4.674e-09
+  ok   decoder.stop.weight      max rel err 4.621e-10
+  ok   decoder.stop.bias        max rel err 1.053e-11
+  ok   layers.0.decay           max rel err 0.000e+00
+  ok   layers.0.norm.weight     max rel err 1.930e-09
+  ok   layers.0.norm.bias       max rel err 1.687e-09
+  ok   layers.0.weights.weight  max rel err 5.710e-09
+  ok   layers.1.decay           max rel err 0.000e+00
+  ok   layers.1.norm.weight     max rel err 1.296e-08
+  ok   layers.1.norm.bias       max rel err 3.820e-09
+  ok   layers.1.weights.weight  max rel err 5.372e-08
+  ok   layers.2.decay           max rel err 0.000e+00
+  ok   layers.2.norm.weight     max rel err 8.695e-08
+  ok   layers.2.norm.bias       max rel err 2.099e-08
+  ok   layers.2.weights.weight  max rel err 2.966e-09
+  
+  layer  0 dim    2  num -2.044740e-01  ana -2.044740e-01  rel 1.827e-10
+  layer  1 dim   12  num  6.881759e-02  ana  6.881759e-02  rel 2.207e-10
+  layer  2 dim   28  num -3.725558e-03  ana -3.725558e-03  rel 4.509e-09
+  ```
+  - Note:
+  - This is NOT the Average results for each Gradient check without weight encoding per N > 1, where N is the total gradient check test.
+- The Gradient check results (with Weight encoding):
+- ```txt
+  ok   encoder.embed.weight     max rel err 3.417e-10
+  MEH  decoder.decode.weight    max rel err 2.882e-05
+  MEH  decoder.decode.bias      max rel err 4.271e-04
+  ok   decoder.stop.weight      max rel err 7.713e-10
+  ok   decoder.stop.bias        max rel err 8.459e-10
+  ok   layers.0.decay           max rel err 0.000e+00
+  ok   layers.0.norm.weight     max rel err 2.059e-10
+  ok   layers.0.norm.bias       max rel err 2.312e-09
+  ok   layers.0.weights.weight  max rel err 6.730e-10
+  ok   layers.1.decay           max rel err 0.000e+00
+  ok   layers.1.norm.weight     max rel err 9.268e-10
+  ok   layers.1.norm.bias       max rel err 3.752e-10
+  ok   layers.1.weights.weight  max rel err 3.549e-07
+  ok   layers.2.decay           max rel err 0.000e+00
+  ok   layers.2.norm.weight     max rel err 1.084e-10
+  ok   layers.2.norm.bias       max rel err 1.333e-09
+  ok   layers.2.weights.weight  max rel err 2.102e-07
+  
+  layer  0 dim   14  num  3.999377e+01  ana  3.999377e+01  rel 1.098e-10
+  layer  1 dim    2  num  1.211930e+00  ana  1.211930e+00  rel 1.568e-10
+  layer  2 dim   27  num  8.217010e-01  ana  8.217010e-01  rel 4.997e-10
+  ```
+  - Note
+  - This is the average results where the Model incorporates the weight encoding inside its forward pass per 3 continuous test.
+
+  # Key Results:
+  - From the above experimental results, the key results:
+    - the decoder.decode.weight has relatively higher max rel error (2.882e-05) when The Model used the Weight encoding.
+    - the decoder.decode.bias has relatively higher max rel error (4.271e-04) when the model used the Weight encoding.
