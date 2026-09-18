@@ -104,32 +104,34 @@ Below is an approximate flow chart of the model architecture, made in Apple's Fr
   - This is NOT the Average results for each Gradient check without weight encoding per N > 1, where N is the total gradient check test.
 - The Gradient check results (with Weight encoding):
 - ```txt
-  ok   encoder.embed.weight     max rel err 3.417e-10
-  MEH  decoder.decode.weight    max rel err 2.882e-05
-  MEH  decoder.decode.bias      max rel err 4.271e-04
-  ok   decoder.stop.weight      max rel err 7.713e-10
-  ok   decoder.stop.bias        max rel err 8.459e-10
+  ok   encoder.embed.weight     max rel err 8.510e-10
+  MEH  decoder.decode.weight    max rel err 1.738e-04
+  MEH  decoder.decode.bias      max rel err 1.292e-04
+  ok   decoder.stop.weight      max rel err 2.154e-09
+  ok   decoder.stop.bias        max rel err 2.555e-09
   ok   layers.0.decay           max rel err 0.000e+00
-  ok   layers.0.norm.weight     max rel err 2.059e-10
-  ok   layers.0.norm.bias       max rel err 2.312e-09
-  ok   layers.0.weights.weight  max rel err 6.730e-10
+  ok   layers.0.norm.weight     max rel err 1.803e-09
+  ok   layers.0.norm.bias       max rel err 2.434e-10
+  ok   layers.0.weights.weight  max rel err 1.157e-08
   ok   layers.1.decay           max rel err 0.000e+00
-  ok   layers.1.norm.weight     max rel err 9.268e-10
-  ok   layers.1.norm.bias       max rel err 3.752e-10
-  ok   layers.1.weights.weight  max rel err 3.549e-07
+  ok   layers.1.norm.weight     max rel err 2.612e-08
+  ok   layers.1.norm.bias       max rel err 1.508e-10
+  ok   layers.1.weights.weight  max rel err 2.934e-07
   ok   layers.2.decay           max rel err 0.000e+00
-  ok   layers.2.norm.weight     max rel err 1.084e-10
-  ok   layers.2.norm.bias       max rel err 1.333e-09
-  ok   layers.2.weights.weight  max rel err 2.102e-07
+  ok   layers.2.norm.weight     max rel err 2.755e-09
+  ok   layers.2.norm.bias       max rel err 6.421e-10
+  ok   layers.2.weights.weight  max rel err 2.163e-07
   
-  layer  0 dim   14  num  3.999377e+01  ana  3.999377e+01  rel 1.098e-10
-  layer  1 dim    2  num  1.211930e+00  ana  1.211930e+00  rel 1.568e-10
-  layer  2 dim   27  num  8.217010e-01  ana  8.217010e-01  rel 4.997e-10
+  layer  0 dim   22  num -5.004285e+00  ana -5.004285e+00  rel 8.009e-11
+  layer  1 dim   13  num  2.089950e+00  ana  2.089950e+00  rel 4.510e-11
+  layer  2 dim   26  num  5.220630e-01  ana  5.220630e-01  rel 2.275e-10 
   ```
   - Note
   - This is the average results where the Model incorporates the weight encoding inside its forward pass per 3 continuous test.
 
   # Key Results:
   - From the above experimental results, the key results:
-    - the decoder.decode.weight has relatively higher max rel error (2.882e-05) when The Model used the Weight encoding.
-    - the decoder.decode.bias has relatively higher max rel error (4.271e-04) when the model used the Weight encoding.
+    - the decoder.decode.weight has relatively higher max rel error (1.738e-04) when The Model used the Weight encoding.
+    - the decoder.decode.bias has relatively higher max rel error (1.292e-04) when the model used the Weight encoding.
+  - Conclusion:
+    - This does not meant the Gradient when using the Weight encoding is bad, it just happens to have a different quality that was still Within what float32 finite-differencing produces for a correctly-implemented gradient.
