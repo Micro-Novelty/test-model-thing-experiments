@@ -66,8 +66,7 @@ Below is an approximate flow chart of the model architecture, made in Apple's Fr
           p["decoder.decode.weight"] = rng.uniform(-k, k, (256, dim)).astype(dtype)
           p["decoder.decode.bias"] = rng.uniform(-k, k, (256,)).astype(dtype)
           p["decoder.stop.weight"] = rng.uniform(-k, k, (1, dim)).astype(dtype)
-          p["decoder.stop.bias"] = rng.uniform(-k, k, (1,)).astype(dtype)
-
+          p["decoder.stop.bias"] = self.weight_encoding.weight_shaping(x, type_='4', dtype=dtype ) # placed right here.
           for i in range(layers):
               p[f"layers.{i}.decay"] = np.zeros(dim, dtype)
               p[f"layers.{i}.norm.weight"] = np.ones(dim, dtype)
@@ -76,6 +75,9 @@ Below is an approximate flow chart of the model architecture, made in Apple's Fr
 
           self.p = p
     ```
+  - Note:
+  - The key reason why The weight encoding is placed in decoder.stop bias and layers.{i}.weights.weight is that it yields the most Promising results for lower relative error in some part of the gradients, so the placement is purely because of empirical validation.
+    
 - The Gradient check results (without Weight encoding):
 - ```txt
   ok   encoder.embed.weight     max rel err 7.608e-10
